@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 1.0.0
+
+      - run: supabase start
+
+      # - run: supabase db lint
+      # - run: supabase db test
+
+      - name: Verify generated types are checked in
+        run: |
+          supabase gen types typescript --local > types.gen.ts
+          if [ "$(git diff --ignore-space-at-eol types.gen.ts | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build. See status below:"
+            git diff
+            exit 1
+          fi
